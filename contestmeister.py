@@ -200,6 +200,18 @@ while qtype != '1':
         helpinfo = "Options: \n\np: put question in the question bank. Each section is separated with a period on a blank line. Enter tags, question text, choices separated by a period each and then an additional period after all choices have been entered and the correct answer. \n\nd: delete a question from the bank. Enter d followed by the number you wish to delete. \n\nr: get a random question from the bank. It will display the question and list of option. Select the answer you think it is and then hit enter. \n\nc: check answer to a question. Enter c followed by the question number you want to check and then the answer you wish to check in the format c <question number> <answer>. It will return correct or incorrect. \n\nq: terminate the client\n\nk: terminate the server\n\nh: print these instructions"
         print(helpinfo)
 
+    elif qtypefirst == 's':
+        # set contest
+        sendData = json.dumps(qtype)
+        s.send(sendData.encode())
+        rcvdData = s.recv(1024).decode()
+        response = json.loads(rcvdData)
+        if response[0:5] == "Error":
+            print(response)
+        else:
+            print("number cleared for the taking")
+            f = open("contest" + response + ".txt", "w+")
+
     else:
         print("Command not recognized")
 

@@ -134,6 +134,23 @@ while True:
             else:
                 sendData = "Question not entered"
             sendData = json.dumps(sendData)
+        elif tempfirst == "s":
+            temprest = temprest.strip(" ")
+            contestnum = temprest
+            if contestnum != "":
+                print("trying number: " + contestnum)
+
+                try:
+                    nameOfFile = "contest" + contestnum + ".txt"
+                    with open(nameOfFile) as json_file:
+                        sendData = ("Error: Contest " +
+                                    contestnum + " already exists")
+                except (OSError, IOError, EOFError) as e:
+                    sendData = contestnum
+                sendData = json.dumps(sendData)
+            else:
+                sendData = ("Error: invalid input")
+
         else:
             # print("It's a dict")
             print("")
