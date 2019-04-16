@@ -209,9 +209,15 @@ while qtype != '1':
         if response[0:5] == "Error":
             print(response)
         else:
-            print("number cleared for the taking")
+            print("Contest " + response + " is set")
             f = open("contest" + response + ".txt", "w+")
 
+    elif qtypefirst == 'a':
+        sendData = json.dumps(qtype)
+        s.send(sendData.encode())
+        rcvdData = s.recv(1024).decode()
+        response = json.loads(rcvdData)
+        print(response)
     else:
         print("Command not recognized")
 

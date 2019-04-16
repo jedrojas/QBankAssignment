@@ -138,8 +138,6 @@ while True:
             temprest = temprest.strip(" ")
             contestnum = temprest
             if contestnum != "":
-                print("trying number: " + contestnum)
-
                 try:
                     nameOfFile = "contest" + contestnum + ".txt"
                     with open(nameOfFile) as json_file:
@@ -150,7 +148,22 @@ while True:
                 sendData = json.dumps(sendData)
             else:
                 sendData = ("Error: invalid input")
-
+        elif tempfirst == "a":
+            temprest = temprest[1:]
+            cnumber = temprest.split(" ")[0]
+            qnumber = temprest.split(" ")[1]
+            try:
+                nameOfFile = "contest" + cnumber + ".txt"
+                with open(nameOfFile) as json_file:
+                    if qnumber in questionDict:
+                        sendData = ("Added question " + qnumber +
+                                    " to contest " + cnumber)
+                    else:
+                        sendData = ("Error: Question " +
+                                    qnumber + " does not exist")
+            except (OSError, IOError, EOFError) as e:
+                sendData = ("Error: Contest " + cnumber + " does not exist")
+            sendData = json.dumps(sendData)
         else:
             # print("It's a dict")
             print("")
