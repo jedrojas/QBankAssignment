@@ -35,56 +35,51 @@ while qtype != '1':
 
     if qtypefirst == 'p':
 
+        tags = ""
+        tags = input("")
+        # tags = tags.split(",")
+        qtemp = ""
+        question = ""
+        while(qtemp != "."):
+            qtemp = input("")
+            question = question + qtemp
+        question = question[:-1]
+        listOfQ = []
+        prevAnswer = "Temp"
+        currAnswer = ""
+        currAnswerTemp = " "
+        counter = 0
+        while counter < 1:
+            while counter < 1:
+                currAnswerTemp = input("")
+                currAnswer = currAnswer + currAnswerTemp
+                if currAnswer == ".":
+                    counter = counter + 1
+                if(currAnswerTemp == "."):
+                    break
+            currAnswer = currAnswer[:-1]
+            if(currAnswer != ""):
+                if counter == 0:
+                    counter = 0
+                else:
+                    counter = counter - 1
+                listOfQ.append(currAnswer)
+                currAnswer = ""
+            if len(listOfQ) < 2 and counter == 1:
+                print("Must have at least 2 choices. Please enter another option.")
+                counter = counter - 1
+            currAnswerTemp = ""
+        correctAnswer = input("")
+
+        ###
+
         sendData = json.dumps(qtype)
         s.send(sendData.encode())
         rcvdData = s.recv(1024).decode()
         response = json.loads(rcvdData)
-
         if response[0:5] == "Error":
             print(response)
         else:
-            tags = ""
-            tags = input("")
-            # tags = tags.split(",")
-            qtemp = ""
-            question = ""
-            while(qtemp != "."):
-                qtemp = input("")
-                question = question + qtemp
-            question = question[:-1]
-            listOfQ = []
-            prevAnswer = "Temp"
-            currAnswer = ""
-            currAnswerTemp = " "
-            counter = 0
-            while counter < 1:
-                while counter < 1:
-                    currAnswerTemp = input("")
-                    currAnswer = currAnswer + currAnswerTemp
-                    if currAnswer == ".":
-                        counter = counter + 1
-                    if(currAnswerTemp == "."):
-                        break
-                currAnswer = currAnswer[:-1]
-                if(currAnswer != ""):
-                    if counter == 0:
-                        counter = 0
-                    else:
-                        counter = counter - 1
-                    listOfQ.append(currAnswer)
-                    currAnswer = ""
-                if len(listOfQ) < 2 and counter == 1:
-                    print("Must have at least 2 choices. Please enter another option.")
-                    counter = counter - 1
-                currAnswerTemp = ""
-            correctAnswer = input("")
-
-            ###
-
-            sendData = json.dumps("GetNextQNum")
-            s.send(sendData.encode())
-            rcvdData = s.recv(1024).decode()
-            questionNum = json.loads(rcvdData)
             ###
 
             tempQuestion = {}
@@ -94,9 +89,9 @@ while qtype != '1':
             wholeQuestion.append(question)
             wholeQuestion.append(listOfQ)
             wholeQuestion.append(correctAnswer)
-            tempQuestion[questionNum] = wholeQuestion
+            tempQuestion[response] = wholeQuestion
             # print(questionNum)
-            print("Question " + questionNum + " added.")
+            print("Question " + response + " added.")
 
             sendData = (tempQuestion)
             sendData = json.dumps(sendData)

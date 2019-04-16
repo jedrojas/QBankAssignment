@@ -77,12 +77,13 @@ while True:
             sendData = ""
             sendData = json.dumps(sendData)
         # elif temp == "GetNextQNum":
-        #     for x in range(1, 500):
-        #         x = str(x)
-        #         if x not in questionDict:
-        #             questionNum = x
-        #             break
-        #     sendData = json.dumps(questionNum)
+            # for x in range(1, 500):
+            #     x = str(x)
+            #     if x not in questionDict:
+            #         questionNum = x
+            #         break
+
+            # sendData = json.dumps(questionNum)
         elif type(temp) == dict:
             for key, value in temp.items():
                 questionDict.update({key: value})
