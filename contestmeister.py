@@ -218,6 +218,13 @@ while qtype != '1':
         rcvdData = s.recv(1024).decode()
         response = json.loads(rcvdData)
         print(response)
+
+    elif qtypefirst == 'b':
+        sendData = json.dumps(qtype)
+        s.send(sendData.encode())
+        rcvdData = s.recv(1024).decode()
+        response = json.loads(rcvdData)
+        print(response)
     else:
         print("Command not recognized")
 
