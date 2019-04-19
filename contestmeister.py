@@ -125,52 +125,52 @@ while qtype != '1':
         else:
             print("Unable to get question")
 
-    elif qtypefirst == 'r':
+    # elif qtypefirst == 'r':
 
-        sendData = json.dumps(qtype)
-        s.send(sendData.encode())
-        rcvdData = s.recv(1024).decode()
-        response = json.loads(rcvdData)
+    #     sendData = json.dumps(qtype)
+    #     s.send(sendData.encode())
+    #     rcvdData = s.recv(1024).decode()
+    #     response = json.loads(rcvdData)
 
-        if type(response) != list:
-            print("There are no questions entered")
-            qtype = "reset"
-            continue
-        else:
-            number, info = response
-            print(number)
-            print(info[1])
-            for x in info[2]:
-                print(x)
-            useranswer = input("Answer: ")
+    #     if type(response) != list:
+    #         print("There are no questions entered")
+    #         qtype = "reset"
+    #         continue
+    #     else:
+    #         number, info = response
+    #         print(number)
+    #         print(info[1])
+    #         for x in info[2]:
+    #             print(x)
+    #         useranswer = input("Answer: ")
 
-            sendData = "c " + number + " " + useranswer
+    #         sendData = "c " + number + " " + useranswer
 
-            length = len(info[2])
-            charLength = chr(ord('`')+length)
-            stop = 0
+    #         length = len(info[2])
+    #         charLength = chr(ord('`')+length)
+    #         stop = 0
 
-            if(useranswer <= charLength and useranswer != ""):
-                sendData = json.dumps(sendData)
-                s.send(sendData.encode())
-                rcvdData = s.recv(1024).decode()
-                response = json.loads(rcvdData)
-                print(response)
+    #         if(useranswer <= charLength and useranswer != ""):
+    #             sendData = json.dumps(sendData)
+    #             s.send(sendData.encode())
+    #             rcvdData = s.recv(1024).decode()
+    #             response = json.loads(rcvdData)
+    #             print(response)
 
-            else:
-                while stop == 0:
-                    useranswer = input(
-                        "That's not an option. Please enter your answer: ")
-                    if useranswer == "":
-                        continue
-                    elif(useranswer <= charLength):
-                        sendData = "c " + number + " " + useranswer
-                        sendData = json.dumps(sendData)
-                        s.send(sendData.encode())
-                        rcvdData = s.recv(1024).decode()
-                        response = json.loads(rcvdData)
-                        print(response)
-                        break
+    #         else:
+    #             while stop == 0:
+    #                 useranswer = input(
+    #                     "That's not an option. Please enter your answer: ")
+    #                 if useranswer == "":
+    #                     continue
+    #                 elif(useranswer <= charLength):
+    #                     sendData = "c " + number + " " + useranswer
+    #                     sendData = json.dumps(sendData)
+    #                     s.send(sendData.encode())
+    #                     rcvdData = s.recv(1024).decode()
+    #                     response = json.loads(rcvdData)
+    #                     print(response)
+    #                     break
 
     elif qtypefirst == 'c':
         qtyperest = qtyperest.replace(" ", "")
@@ -224,9 +224,18 @@ while qtype != '1':
         s.send(sendData.encode())
         rcvdData = s.recv(1024).decode()
         response = json.loads(rcvdData)
+        rcvdData = s.recv(1024).decode()
+        response = json.loads(rcvdData)
         print(response)
 
     elif qtypefirst == 'l':
+        sendData = json.dumps(qtype)
+        s.send(sendData.encode())
+        rcvdData = s.recv(1024).decode()
+        response = json.loads(rcvdData)
+        print(response)
+
+    elif qtypefirst == 'r':
         sendData = json.dumps(qtype)
         s.send(sendData.encode())
         rcvdData = s.recv(1024).decode()

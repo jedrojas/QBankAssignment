@@ -81,16 +81,20 @@ def makeConnection():
     return c
 
 
-def makeContestConnection(cnum, usernameDict, contestants):
+def makeContestConnection(cnum, usernameDict, contestants, conn):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.bind(('', 0))
     global port
     port = s.getsockname()[1]
+    sendData = port
+    sendData = json.dumps(sendData)
+    conn.send(sendData.encode())
+
     print("Contest " + str(cnum) + " started on port " + str(port))
     s.listen(5)
     try:
-        s.settimeout(5)
+        s.settimeout(60)
         while True:
             c, addr = s.accept()
             contestants.append(c)
@@ -98,8 +102,11 @@ def makeContestConnection(cnum, usernameDict, contestants):
             sendData = json.dumps(sendData)
             c.send(sendData.encode())
     except:
-        print("contest entry over, beginning contest!")
-    begincontest(contestants, usernameDict, cnum)
+        pass
+    if len(contestants) != 0:
+        begincontest(contestants, usernameDict, cnum)
+    else:
+        print("No contestants entered")
 
 
 def begincontest(contestants, usernameDict, cnum):
@@ -132,9 +139,9 @@ def begincontest(contestants, usernameDict, cnum):
         totalcorrect = totalcorrect + value
     avg = totalcorrect / float(len(contestants))
 
-    updatecontests(cnum, 1, 0, 0)
-    updatecontests(cnum, 2, avg, 0)
-    updatecontests(cnum, 3, 0, maxnum)
+    updatecontests(cnum, 1, 0, 0, 0)
+    updatecontests(cnum, 2, avg, 0, 0)
+    updatecontests(cnum, 3, 0, maxnum, 0)
 
 
 def endcontest(c):
@@ -157,7 +164,7 @@ def handlequestion(qnum, q, contestants, numcorrect, cqnum, stats):
         t.join()
     for x in corrects:
         numcorrect = numcorrect + 1
-    print(numcorrect)
+    # print(numcorrect)
     percentage = "{:.0%}".format(numcorrect/len(contestants))
     # print("{:.0%}".format(numcorrect/len(contestants)))
 
@@ -287,7 +294,7 @@ def getdatafromjson(nof):
     return someDict
 
 
-def updatecontests(cnum, i, ac, mc):
+def updatecontests(cnum, i, ac, mc, qnum):
     contests = getdatafromjson("contests.txt")
     if i == 0:
         contests[cnum][i] = contests[cnum][i] + 1
@@ -374,12 +381,12 @@ while True:
             else:
                 sendData = ("Error: question " + temprest + " not found")
             sendData = json.dumps(sendData)
-        elif tempfirst == "r":
-            if bool(questionDict) == False:
-                sendData = "None"
-            else:
-                sendData = random.choice(list(questionDict.items()))
-            sendData = json.dumps(sendData)
+        # elif tempfirst == "r":
+        #     if bool(questionDict) == False:
+        #         sendData = "None"
+        #     else:
+        #         sendData = random.choice(list(questionDict.items()))
+        #     sendData = json.dumps(sendData)
         elif tempfirst == "c":
             temprest = temprest[1:]
             qnumber = temprest.split(" ")[0]
@@ -405,11 +412,9 @@ while True:
                     # create contest
                     getdatafromjson(nameOfFile)
                     sendData = contestnum
-                    # add to contests stats file
                     contests = getdatafromjson("contests.txt")
                     contests.update({contestnum: [0, False, 0, 0]})
                     saveobj(contests, "contests.txt")
-
                 sendData = json.dumps(sendData)
             else:
                 sendData = ("Error: invalid input")
@@ -431,7 +436,7 @@ while True:
                             saveobj(contestDict, nameOfFile)
                             sendData = ("Added question " + qnumber +
                                         " to contest " + cnumber)
-                            updatecontests(cnumber, 0, 0, 0)
+                            updatecontests(cnumber, 0, 0, 0, qnumber)
                     else:
                         sendData = ("Error: Question " +
                                     qnumber + " does not exist")
@@ -445,9 +450,9 @@ while True:
             try:
                 nameOfFile = "contest" + contestnum + ".txt"
                 with open(nameOfFile) as json_file:
-                    sendData = ("contest can be started")
+                    sendData = ("")
                     _thread.start_new_thread(
-                        makeContestConnection, (contestnum, usernameDict, contestants))
+                        makeContestConnection, (contestnum, usernameDict, contestants, c))
             except (OSError, IOError, EOFError) as e:
                 sendData = ("contest cannot be started")
             sendData = json.dumps(sendData)
@@ -455,8 +460,6 @@ while True:
             contests = getdatafromjson("contests.txt")
             sendData = ""
             for key, value in contests.items():
-                # print(key)
-                # print(value)
                 sendData = sendData + key + "\t" + \
                     str(value[0]) + " question(s), "
                 if value[1]:
@@ -466,6 +469,23 @@ while True:
                     sendData = sendData + "not run"
                 sendData = sendData + "\n"
             sendData = json.dumps(sendData)
+        elif tempfirst == "r":
+            temprest = temprest.strip(" ")
+            contests = getdatafromjson("contests.txt")
+            if temprest in contests:
+                key = temprest
+                value = contests[temprest]
+                sendData = ""
+                sendData = sendData + key + "\t" + \
+                    str(value[0]) + " question(s), "
+                if value[1]:
+                    sendData = sendData + "run, average correct: " + \
+                        str(value[2]) + "; maximum correct: " + str(value[3])
+                else:
+                    sendData = sendData + "not run"
+                sendData = sendData + "\n"
+            sendData = json.dumps(sendData)
+
         else:
             print("")
     else:
