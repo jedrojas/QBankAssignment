@@ -52,5 +52,10 @@ while nicknametaken:
         nicknametaken = False
 # nickname in, time to start answering questions
 
+quizinprogress = True
+while quizinprogress:
+    rcvdData = s.recv(1024).decode()
+    question = json.loads(rcvdData)
+    print(question)
 
 s.close()

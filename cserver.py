@@ -45,11 +45,11 @@ def loadobj(nof):
         return json.loads(file)
 
 
-def save_name(name):
+def save_name(obj):
     nameOfFile = "usernamebank.txt"
-    name = json.dumps(name)
+    obj = json.dumps(obj)
     with open(nameOfFile, 'w') as f:
-        json.dump(name, f, ensure_ascii=False)
+        json.dump(obj, f, ensure_ascii=False)
 
 
 def load_names():
@@ -90,7 +90,7 @@ def makeContestConnection(cnum, usernameDict, contestants):
     print("Contest " + str(cnum) + " started on port " + str(port))
     s.listen(5)
     try:
-        s.settimeout(10)
+        s.settimeout(5)
         while True:
             c, addr = s.accept()
             contestants.append(c)
@@ -111,8 +111,16 @@ def begincontest(contestants, usernameDict, cnum):
     for name in nameholder:
         stats.update({name: 0})
 
+    contestquestions = loadobj("contest" + cnum + ".txt")
+    cqnum = 1
+    for q in contestquestions:
+        numcorrect = 0
+        givequestion(q, contestquestions[q],
+                     contestants, numcorrect, cqnum, stats)
+        cqnum = cqnum + 1
+
     # while hasmorequestions(cnum):
-    #     givenextquestion(contestants)
+        #     givenextquestion(contestants)
 
         # HERE:
         # while loop to go through questions in contest
@@ -121,7 +129,27 @@ def begincontest(contestants, usernameDict, cnum):
         #     print(value)
         # givequestions()
 
-        # def givequestions()
+
+def givequestion(qnum, q, contestants, numcorrect, cqnum, stats):
+    for c in contestants:
+        line1 = "Question " + str(cqnum) + ":\n"
+        line2 = q[1] + "\n"
+        line3 = ""
+        index = 'a'
+        for i in range(len(q[2])):
+            line3 = line3 + "(" + index + ") " + q[2][i] + "\n"
+            index = chr(ord(index) + 1)
+        sendData = line1 + line2 + line3
+        sendData = json.dumps(sendData)
+        c.send(sendData.encode())
+        # just sent question, waiting for their answer
+        rcvdData = c.recv(1024).decode()
+        response = json.loads(rcvdData)
+        # got answer, now check if it's right
+        if response == q[3]:
+            sendData = "Correct."
+
+        print(response)
 
 
 def gathernicknames(contestants, usernameDict, nameholder):
@@ -311,10 +339,6 @@ while True:
                         contestDict = getdatafromjson(nameOfFile)
                         contestDict.update({qnumber: questionDict[qnumber]})
                         saveobj(contestDict, nameOfFile)
-
-            # for key, value in temp.items():
-            #     questionDict.update({key: value})
-
                         sendData = ("Added question " + qnumber +
                                     " to contest " + cnumber)
                     else:
