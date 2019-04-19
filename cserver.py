@@ -105,8 +105,6 @@ def makeContestConnection(cnum, usernameDict, contestants):
 def begincontest(contestants, usernameDict, cnum):
     nameholder = []
     stats = {}
-    questioncount = 0
-
     gathernicknames(contestants, usernameDict, nameholder)
     for name in nameholder:
         stats.update({name: 0})
@@ -117,9 +115,7 @@ def begincontest(contestants, usernameDict, cnum):
         numcorrect = 0
         handlequestion(q, contestquestions[q],
                        contestants, numcorrect, cqnum, stats)
-        # threads.append(t)
         cqnum = cqnum + 1
-
     threads = []
     for c in contestants:
         t = Thread(target=endcontest, args=[c])
@@ -128,6 +124,17 @@ def begincontest(contestants, usernameDict, cnum):
         t.start()
     for t in threads:
         t.join()
+
+    maxi = max(stats, key=stats.get)
+    maxnum = stats[maxi]
+    totalcorrect = 0
+    for key, value in stats.items():
+        totalcorrect = totalcorrect + value
+    avg = totalcorrect / float(len(contestants))
+
+    updatecontests(cnum, 1, 0, 0)
+    updatecontests(cnum, 2, avg, 0)
+    updatecontests(cnum, 3, 0, maxnum)
 
 
 def endcontest(c):
@@ -280,6 +287,19 @@ def getdatafromjson(nof):
     return someDict
 
 
+def updatecontests(cnum, i, ac, mc):
+    contests = getdatafromjson("contests.txt")
+    if i == 0:
+        contests[cnum][i] = contests[cnum][i] + 1
+    elif i == 1:
+        contests[cnum][i] = True
+    elif i == 2:
+        contests[cnum][i] = ac
+    elif i == 3:
+        contests[cnum][i] = mc
+    saveobj(contests, "contests.txt")
+
+
 c = firstmakeConnection()
 questionDict = {}
 usernameDict = {}
@@ -385,6 +405,11 @@ while True:
                     # create contest
                     getdatafromjson(nameOfFile)
                     sendData = contestnum
+                    # add to contests stats file
+                    contests = getdatafromjson("contests.txt")
+                    contests.update({contestnum: [0, False, 0, 0]})
+                    saveobj(contests, "contests.txt")
+
                 sendData = json.dumps(sendData)
             else:
                 sendData = ("Error: invalid input")
@@ -397,10 +422,16 @@ while True:
                 with open(nameOfFile) as json_file:
                     if qnumber in questionDict:
                         contestDict = getdatafromjson(nameOfFile)
-                        contestDict.update({qnumber: questionDict[qnumber]})
-                        saveobj(contestDict, nameOfFile)
-                        sendData = ("Added question " + qnumber +
-                                    " to contest " + cnumber)
+                        if qnumber in contestDict:
+                            sendData = (
+                                "Question already exists in this contest")
+                        else:
+                            contestDict.update(
+                                {qnumber: questionDict[qnumber]})
+                            saveobj(contestDict, nameOfFile)
+                            sendData = ("Added question " + qnumber +
+                                        " to contest " + cnumber)
+                            updatecontests(cnumber, 0, 0, 0)
                     else:
                         sendData = ("Error: Question " +
                                     qnumber + " does not exist")
@@ -421,9 +452,21 @@ while True:
                 sendData = ("contest cannot be started")
             sendData = json.dumps(sendData)
         elif tempfirst == "l":
-
+            contests = getdatafromjson("contests.txt")
+            sendData = ""
+            for key, value in contests.items():
+                # print(key)
+                # print(value)
+                sendData = sendData + key + "\t" + \
+                    str(value[0]) + " question(s), "
+                if value[1]:
+                    sendData = sendData + "run, average correct: " + \
+                        str(value[2]) + "; maximum correct: " + str(value[3])
+                else:
+                    sendData = sendData + "not run"
+                sendData = sendData + "\n"
+            sendData = json.dumps(sendData)
         else:
-            # print("It's a dict")
             print("")
     else:
         sendData = json.dumps("")
