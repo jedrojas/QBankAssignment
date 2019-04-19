@@ -56,6 +56,34 @@ quizinprogress = True
 while quizinprogress:
     rcvdData = s.recv(1024).decode()
     question = json.loads(rcvdData)
-    print(question)
+    if question[0:5] == "Break":
+        print("The contest is over - thanks for playing " + nickname + "!")
+        break
+    else:
+        print(question)
+
+    answer = input("Enter your choice:")
+    answer = json.dumps(answer)
+    s.send(answer.encode())
+    # just sent answer, waiting to see if right or wrong
+
+    rcvdData = s.recv(1024).decode()
+    reply = json.loads(rcvdData)
+    # got a name request
+
+    sendData = json.dumps(nickname)
+    s.send(sendData.encode())
+    # sent name
+
+    rcvdData = s.recv(1024).decode()
+    reply = json.loads(rcvdData)
+    print(reply)
+    # just got correct/incorrect and my stats
+
+    # getting more stats
+    rcvdData = s.recv(1024).decode()
+    res = json.loads(rcvdData)
+    print(res)
+
 
 s.close()

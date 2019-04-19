@@ -115,48 +115,107 @@ def begincontest(contestants, usernameDict, cnum):
     cqnum = 1
     for q in contestquestions:
         numcorrect = 0
-        givequestion(q, contestquestions[q],
-                     contestants, numcorrect, cqnum, stats)
+        handlequestion(q, contestquestions[q],
+                       contestants, numcorrect, cqnum, stats)
+        # threads.append(t)
         cqnum = cqnum + 1
 
-    # while hasmorequestions(cnum):
-        #     givenextquestion(contestants)
-
-        # HERE:
-        # while loop to go through questions in contest
-        # for key, value in stats.items():
-        #     print(key)
-        #     print(value)
-        # givequestions()
-
-
-def givequestion(qnum, q, contestants, numcorrect, cqnum, stats):
+    threads = []
     for c in contestants:
-        line1 = "Question " + str(cqnum) + ":\n"
-        line2 = q[1] + "\n"
-        line3 = ""
-        index = 'a'
-        for i in range(len(q[2])):
-            line3 = line3 + "(" + index + ") " + q[2][i] + "\n"
-            index = chr(ord(index) + 1)
-        sendData = line1 + line2 + line3
-        sendData = json.dumps(sendData)
-        c.send(sendData.encode())
-        # just sent question, waiting for their answer
-        rcvdData = c.recv(1024).decode()
-        response = json.loads(rcvdData)
-        # got answer, now check if it's right
-        if response == q[3]:
-            sendData = "Correct."
+        t = Thread(target=endcontest, args=[c])
+        threads.append(t)
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
 
-        print(response)
+
+def endcontest(c):
+    sendData = ("Break")
+    sendData = json.dumps(sendData)
+    c.send(sendData.encode())
+
+
+def handlequestion(qnum, q, contestants, numcorrect, cqnum, stats):
+    threads = []
+    corrects = []
+    nameholder = []
+    for c in contestants:
+        t = Thread(target=givequestion, args=[
+                   c, qnum, q, cqnum, corrects, stats])
+        threads.append(t)
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    for x in corrects:
+        numcorrect = numcorrect + 1
+    print(numcorrect)
+    percentage = "{:.0%}".format(numcorrect/len(contestants))
+    # print("{:.0%}".format(numcorrect/len(contestants)))
+
+    threads = []
+    curmaxi = max(stats, key=stats.get)
+    curmax = stats[curmaxi]
+    for c in contestants:
+        t = Thread(target=givequestionresults,
+                   args=[c, percentage, curmax, cqnum])
+        threads.append(t)
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+
+def givequestionresults(c, percentage, max, cqnum):
+    sendData = percentage + " of contestants answered this question correctly. The top score is currently " + \
+        str(max) + "/" + str(cqnum)
+    sendData = json.dumps(sendData)
+    c.send(sendData.encode())
+
+
+def givequestion(c, qnum, q, cqnum, corrects, stats):
+    line1 = "Question " + str(cqnum) + ":\n"
+    line2 = q[1] + "\n"
+    line3 = ""
+    index = 'a'
+    for i in range(len(q[2])):
+        line3 = line3 + "(" + index + ") " + q[2][i] + "\n"
+        index = chr(ord(index) + 1)
+    sendData = line1 + line2 + line3
+    sendData = json.dumps(sendData)
+    c.send(sendData.encode())
+    # just sent question, waiting for their answer
+    rcvdData = c.recv(1024).decode()
+    response = json.loads(rcvdData)
+    # got answer, now check if it's right
+
+    reqname = "reqname"
+    reqname = json.dumps(reqname)
+    c.send(reqname.encode())
+
+    # waiting on name, get it here
+    rcvdData = c.recv(1024).decode()
+    name = json.loads(rcvdData)
+
+    if response == q[3]:
+        sendData = "Correct. "
+        stats.update({name: stats[name]+1})
+        corrects.append('1')
+    else:
+        sendData = "Incorrect. "
+
+    sendData = sendData + "Your score is now " + \
+        str(stats[name]) + "/" + str(cqnum) + ". "
+    sendData = json.dumps(sendData)
+    c.send(sendData.encode())
 
 
 def gathernicknames(contestants, usernameDict, nameholder):
     threads = []
     for c in contestants:
         t = Thread(target=getnickname, args=[
-                   c, usernameDict, contestants, nameholder])
+            c, usernameDict, contestants, nameholder])
         threads.append(t)
     for t in threads:
         t.start()
@@ -224,6 +283,7 @@ def getdatafromjson(nof):
 c = firstmakeConnection()
 questionDict = {}
 usernameDict = {}
+contests = {}
 
 try:
     questionDict = load_obj("questions")
@@ -360,6 +420,7 @@ while True:
             except (OSError, IOError, EOFError) as e:
                 sendData = ("contest cannot be started")
             sendData = json.dumps(sendData)
+        elif tempfirst == "l":
 
         else:
             # print("It's a dict")
