@@ -210,7 +210,7 @@ while qtype != '1':
             print(response)
         else:
             print("Contest " + response + " is set")
-            f = open("contest" + response + ".txt", "w+")
+            # f = open("contest" + response + ".txt", "w+")
 
     elif qtypefirst == 'a':
         sendData = json.dumps(qtype)

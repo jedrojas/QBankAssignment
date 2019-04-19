@@ -11,6 +11,7 @@ from threading import Timer
 from threading import Thread
 import time
 import multiprocessing
+from socket import timeout
 
 # TODO
 # input validation on s, b
@@ -25,6 +26,20 @@ def save_obj(obj, name):
 
 def load_obj(name):
     nameOfFile = "qbank.txt"
+    with open(nameOfFile) as json_file:
+        file = json.load(json_file)
+        return json.loads(file)
+
+
+def saveobj(obj, nof):
+    nameOfFile = nof
+    obj = json.dumps(obj)
+    with open(nameOfFile, 'w') as f:
+        json.dump(obj, f, ensure_ascii=False)
+
+
+def loadobj(nof):
+    nameOfFile = nof
     with open(nameOfFile) as json_file:
         file = json.load(json_file)
         return json.loads(file)
@@ -66,7 +81,7 @@ def makeConnection():
     return c
 
 
-def makeContestConnection(cnum, usernameDict):
+def makeContestConnection(cnum, usernameDict, contestants):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.bind(('', 0))
@@ -74,77 +89,108 @@ def makeContestConnection(cnum, usernameDict):
     port = s.getsockname()[1]
     print("Contest " + str(cnum) + " started on port " + str(port))
     s.listen(5)
-    # set timer here
-    # timeout = time.time() + 5
-    # t = Timer(5, timeout, [s])
-    # t.start()
-    # t.join()
-    while True:
-        c, addr = s.accept()
-        _thread.start_new_thread(runcontest, (c, usernameDict))
-
-    # t = Thread(target=acceptconnections)
-    # t2 = Thread(target=closeT(), args=[t])
-    s.close()
-
-
-# def acceptconnections(n, c, s, usernameDict):
-#     while True:
-#         c, addr = s.accept()
-#         _thread.start_new_thread(runcontest, (c, usernameDict))
-
-
-# def closeT(t):
-#     timeout = time.time() + 5
-#     while time.time() < timeout:
-#         # do nothing
-#         # t.close()
-
-
-# def timeout(s):
-#     if s.sock_conn is None:
-#         s.connect(s.socket_name)
-#     print("game over")
-
-
-def hello():
-    print("hello")
-
-
-# def on_new_client(clientsocket, addr):
-#     while True:
-#         sendData = ("Please input a nickname: ")
-#         msg = clientsocket.recv(1024)
-#         # do some checks and if msg == someWeirdSignal: break:
-#         msg = input('SERVER >> ')
-#         # Maybe some code to compute the last digit of PI, play game or anything else can go here and when you are done.
-#         clientsocket.send(msg)
-#     clientsocket.close()
-
-
-def runcontest(c, usernameDict):
-
-    # don't think I need this while loop
-    while True:
-        rcvdData = c.recv(1024).decode()
-        if rcvdData != "":
-            temp = json.loads(rcvdData)
-            usernameDict = load_names()
-            if type(usernameDict) == str:
-                usernameDict = {}
-            if temp in usernameDict:
-                sendData = ("Error: username " + temp + " already taken.")
-            else:
-                # add username to dict, then save dict
-                usernameDict.update({temp: temp})
-                save_name(usernameDict)
-                # usernameDict = load_names()
-                sendData = ("Hello " + temp + "! Get ready for the contest!")
-
+    try:
+        s.settimeout(10)
+        while True:
+            c, addr = s.accept()
+            contestants.append(c)
+            sendData = ("Joined server, waiting for contest to begin!")
             sendData = json.dumps(sendData)
+            c.send(sendData.encode())
+    except:
+        print("contest entry over, beginning contest!")
+    begincontest(contestants, usernameDict, cnum)
+
+
+def begincontest(contestants, usernameDict, cnum):
+    nameholder = []
+    stats = {}
+    questioncount = 0
+
+    gathernicknames(contestants, usernameDict, nameholder)
+    for name in nameholder:
+        stats.update({name: 0})
+
+    # while hasmorequestions(cnum):
+    #     givenextquestion(contestants)
+
+        # HERE:
+        # while loop to go through questions in contest
+        # for key, value in stats.items():
+        #     print(key)
+        #     print(value)
+        # givequestions()
+
+        # def givequestions()
+
+
+def gathernicknames(contestants, usernameDict, nameholder):
+    threads = []
+    for c in contestants:
+        t = Thread(target=getnickname, args=[
+                   c, usernameDict, contestants, nameholder])
+        threads.append(t)
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+
+def getnickname(c, usernameDict, contestants, nameholder):
+    sendData = ("Please input a nickname: ")
+    sendData = json.dumps(sendData)
+    c.send(sendData.encode())
+
+    nametaken = True
+    while nametaken:
+        rcvdData = c.recv(1024).decode()
+        temp = json.loads(rcvdData)
+        if temp in usernameDict:
+            sendData = ("Error: nickname taken! Please enter another")
+            sendData = json.dumps(sendData)
+            c.send(sendData.encode())
         else:
-            sendData = "Error: No input given"
-        c.send(sendData.encode())
+            usernameDict.update({temp: temp})
+            save_name(usernameDict)
+            nameholder.append(temp)
+            sendData = ("Hello " + temp + "! Welcome to the contest")
+            sendData = json.dumps(sendData)
+            c.send(sendData.encode())
+            nametaken = False
+
+
+def connectuser(c, usernameDict):
+    rcvdData = c.recv(1024).decode()
+    if rcvdData != "":
+        temp = json.loads(rcvdData)
+        usernameDict = load_names()
+        if type(usernameDict) == str:
+            usernameDict = {}
+        if temp in usernameDict:
+            sendData = ("Error: username " + temp + " already taken.")
+        else:
+            # add username to dict, then save dict
+            usernameDict.update({temp: temp})
+            save_name(usernameDict)
+            # usernameDict = load_names()
+            sendData = ("Hello " + temp + "! Get ready for the contest!")
+        sendData = json.dumps(sendData)
+    else:
+        sendData = "Error: No input given"
+    c.send(sendData.encode())
+
+
+def getdatafromjson(nof):
+    someDict = {}
+    try:
+        someDict = loadobj(nof)
+        if type(someDict) == str:
+            someDict = {}
+    except (OSError, IOError, EOFError) as e:
+        someDict = json.dumps({})
+        saveobj(someDict, nof)
+        someDict = {}
+    return someDict
 
 
 c = firstmakeConnection()
@@ -248,6 +294,8 @@ while True:
                         sendData = ("Error: Contest " +
                                     contestnum + " already exists")
                 except (OSError, IOError, EOFError) as e:
+                    # create contest
+                    getdatafromjson(nameOfFile)
                     sendData = contestnum
                 sendData = json.dumps(sendData)
             else:
@@ -260,6 +308,13 @@ while True:
                 nameOfFile = "contest" + cnumber + ".txt"
                 with open(nameOfFile) as json_file:
                     if qnumber in questionDict:
+                        contestDict = getdatafromjson(nameOfFile)
+                        contestDict.update({qnumber: questionDict[qnumber]})
+                        saveobj(contestDict, nameOfFile)
+
+            # for key, value in temp.items():
+            #     questionDict.update({key: value})
+
                         sendData = ("Added question " + qnumber +
                                     " to contest " + cnumber)
                     else:
@@ -269,6 +324,7 @@ while True:
                 sendData = ("Error: Contest " + cnumber + " does not exist")
             sendData = json.dumps(sendData)
         elif tempfirst == "b":
+            contestants = []
             temprest = temprest.strip(" ")
             contestnum = temprest
             try:
@@ -276,8 +332,7 @@ while True:
                 with open(nameOfFile) as json_file:
                     sendData = ("contest can be started")
                     _thread.start_new_thread(
-                        makeContestConnection, (contestnum, usernameDict))
-                    # /conn = makeContestConnection(contestnum)
+                        makeContestConnection, (contestnum, usernameDict, contestants))
             except (OSError, IOError, EOFError) as e:
                 sendData = ("contest cannot be started")
             sendData = json.dumps(sendData)

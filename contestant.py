@@ -22,27 +22,35 @@ except EnvironmentError as exc:
     print("Cannot create connection. Closing.")
     s.close()
     exit()
-nameprompt = ''
 questionDict = {}
 
+rcvdData = s.recv(1024).decode()
+response = json.loads(rcvdData)
+print(response)
+# just printed out contest joined
 
-while nameprompt != '1':
+rcvdData = s.recv(1024).decode()
+question = json.loads(rcvdData)
+print(question)
+# just asked for nickname
 
-    nameprompt = input("Please input a nickname: ")
+nickname = input()
+sendData = json.dumps(nickname)
+s.send(sendData.encode())
+# just sent nickname
 
-    sendData = json.dumps(nameprompt)
-    s.send(sendData.encode())
+nicknametaken = True
+while nicknametaken:
     rcvdData = s.recv(1024).decode()
     response = json.loads(rcvdData)
     print(response)
-    if response[0:5] != "Error":
-        nameprompt = '1'
-
-contestisnotover = True
-while contestisnotover:
-    rcvdData = s.recv(1024).decode()
-    response = json.loads(rcvdData)
-    print(response)
+    if response[0:5] == "Error":
+        nickname = input()
+        sendData = json.dumps(nickname)
+        s.send(sendData.encode())
+    else:
+        nicknametaken = False
+# nickname in, time to start answering questions
 
 
 s.close()
